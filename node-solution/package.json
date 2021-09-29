@@ -1,0 +1,22 @@
+{
+  "name": "node-solution",
+  "version": "1.0.0",
+  "description": "Transform JSON data to SQL and load them to PostgreSQL",
+  "main": "index.js",
+  "author": "gkampitakis",
+  "license": "MIT",
+  "scripts": {
+    "start": "ts-node-dev index.ts --poll --respawn --transpileOnly"
+  },
+  "devDependencies": {
+    "@types/node": "^16.10.2",
+    "@types/pg": "^8.6.1",
+    "@types/pino": "^6.3.11",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.4.3"
+  },
+  "dependencies": {
+    "pg": "^8.7.1",
+    "pino": "^6.13.3"
+  }
+}

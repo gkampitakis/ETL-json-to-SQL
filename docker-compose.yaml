@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:13
+    ports:
+      - 5432:5432
+    envFile:
+      - database.env
+    volumes:
+      - ./pg_seed/:/docker-entrypoint-initdb.d/ # Init path
+      - ./dist/postgres_data:/var/lib/postgresql/data/ # Persisent Data
