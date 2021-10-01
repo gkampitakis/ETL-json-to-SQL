@@ -1,56 +1,25 @@
+import { createStreamFileReader } from './src/file-reader';
+import { bulkInsert } from './src/pg-client';
+import { batchProcessing } from './src/batch-processor';
 import Logger from './src/logger';
-import { readFileSync, createReadStream } from 'fs';
-import { createInterface } from 'readline';
 
+async function main() {
+  Logger.info('ETL pipeline starting 🚀');
 
-Logger.info('Hello world');
+  const {
+    getData,
+    pause,
+    resume,
+  } = createStreamFileReader('../data-to-load/matchups.json');
 
-// const file = readFileSync('../data-to-load/yelp_academic_dataset_review.json', {
-//   encoding: 'utf-8'
-// });
-
-
-const stream = createReadStream('../data-to-load/yelp_academic_dataset_review.json', {
-  encoding: 'utf-8',
-  flags: 'r'
-});
-
-
-async function test() {
-  let count = 0;
-  const lineReader = createInterface({
-    input: stream,
-    crlfDelay: Infinity
+  batchProcessing({
+    getData,
+    pause,
+    resume,
+    commitData: bulkInsert
   });
 
-
-  for await (const line of lineReader) {
-    console.log(JSON.parse(line)["review_id"]);
-    count++;
-  }
-
-  console.log(count);
+  Logger.info('ETL pipeline finished 🤖');
 }
 
-test();
-
-
-
-
-// stream.on('data', (data) => {
-//   tmp++;
-//   console.log(data);
-
-//   if (tmp > 1) {
-//     stream.close();
-//   }
-// });
-// stream.on('error', console.error);
-// stream.on('close', () => {
-//   console.log('stream closing');
-// });
-
-
-// Load files , gradually
-// Transform them
-// Push them
+main();
