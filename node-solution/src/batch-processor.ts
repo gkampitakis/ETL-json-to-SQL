@@ -1,36 +1,40 @@
 import { Matchup, Fn, BatchProcessingParams } from './types';
 import Logger from './logger';
 
-const MAX_RECORDS = parseInt(process.env.MAX_RECORDS ?? '5000');
+const BATCH_RECORDS = parseInt(process.env.BATCH_RECORDS ?? '5000');
 
 export function batchProcessing({
   getData,
   pause,
-  commitData,
+  bulkInsert,
   resume
 }: BatchProcessingParams,) {
   let buffer: Matchup[] = [];
   // let mux = false;
 
+  function commitData() {
+    Logger.debug(`Committing Batch [size: ${buffer.length}]`);
+
+    bulkInsert(buffer)
+      .then(() => {
+        Logger.debug('Batch was successfully committed');
+      })
+      .catch((error) => {
+        Logger.error(error);
+      })
+      .finally(() => {
+        buffer = [];
+        resume();
+      });
+  }
+
   getData((data) => {
     const result = transformDatum(data);
     if (result) buffer.push(result);
 
-    if (buffer.length >= MAX_RECORDS) {
+    if (buffer.length >= BATCH_RECORDS) {
       pause();
-
-      Logger.debug(`Committing Batch [size: ${buffer.length}]`);
-
-      commitData(buffer)
-        .then(() => {
-          Logger.debug('Batch was successfully committed');
-          buffer = [];
-          resume();
-        })
-        .catch((error) => {
-          Logger.error(error);
-        });
-
+      commitData();
       // if (!mux) {
       //   mux = true;
       //   setTimeout(() => {
@@ -69,7 +73,7 @@ function transformDatum(datum: string): Matchup | null {
     gold_earned: goldearned,
     win: win === 'true',
     minions_killed: totalminionskilled,
-    kda: (kills + assists) / deaths,
+    kda: (kills + assists) / deaths === 0 ? 1 : deaths,
     lane: lane === 'utility' ? 'support' : lane,
     region,
     summoner_name: summonername,

@@ -19,6 +19,6 @@ type Callback<T> = (callback: Fn) => T;
 export interface BatchProcessingParams {
   getData: (callback: (data: string) => void) => void;
   pause: Fn<Interface>;
-  commitData: (data: Matchup[]) => Promise<null>;
   resume: Fn<Interface>;
+  bulkInsert: (data: Matchup[]) => Promise<null>;
 }

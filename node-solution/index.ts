@@ -10,16 +10,17 @@ async function main() {
     getData,
     pause,
     resume,
+    onEnd
   } = createStreamFileReader('../data-to-load/matchups.json');
 
   batchProcessing({
     getData,
     pause,
     resume,
-    commitData: bulkInsert
+    bulkInsert
   });
 
-  Logger.info('ETL pipeline finished 🤖');
+  onEnd(() => Logger.info('ETL pipeline finished 🤖'));
 }
 
 main();

@@ -7,7 +7,7 @@ const pgp = pg_promise({
 const db = pgp({
   keepAlive: true,
   host: process.env.PG_HOST ?? 'localhost',
-  user: process.env.PG_PASS ?? 'ETL_user',
+  user: process.env.PG_USER ?? 'ETL_user',
   password: process.env.PG_PASS ?? 'ETL_pass',
   database: process.env.PG_DATABASE ?? 'ETL_db',
   port: parseInt(process.env.PG_PORT ?? '5432')

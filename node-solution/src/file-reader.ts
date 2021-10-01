@@ -1,5 +1,6 @@
 import { createReadStream } from 'fs';
 import { createInterface } from 'readline';
+import { Fn } from './types';
 
 export function createStreamFileReader(path: string) {
   const stream = createReadStream(path, {
@@ -18,5 +19,6 @@ export function createStreamFileReader(path: string) {
     pause: () => reader.pause(),
     resume: () => reader.resume(),
     getData: (callback: (data: string) => void) => reader.on('line', callback),
+    onEnd: (callback: Fn) => stream.on('end', callback)
   };
 }
