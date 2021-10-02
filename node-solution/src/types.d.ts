@@ -1,3 +1,5 @@
+import { ReadStream } from 'fs';
+
 export interface Matchup {
   gold_earned: number;
   minions_killed: number;
@@ -20,5 +22,13 @@ export interface BatchProcessingParams {
   getData: (callback: (data: string) => void) => void;
   pause: Fn<Interface>;
   resume: Fn<Interface>;
+  onEnd: Callback<Interface>;
   bulkInsert: (data: Matchup[]) => Promise<null>;
+}
+
+export type BatchProcessingEventCallback =
+  ((event: 'finish', callback: (data: BatchReport) => void) => void);
+
+export interface BatchReport { // TBD:
+  data: string;
 }

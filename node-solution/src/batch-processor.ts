@@ -1,4 +1,8 @@
-import { Matchup, Fn, BatchProcessingParams } from './types';
+import {
+  Matchup,
+  BatchProcessingParams,
+  BatchProcessingEventCallback
+} from './types';
 import Logger from './logger';
 
 const BATCH_RECORDS = parseInt(process.env.BATCH_RECORDS ?? '5000');
@@ -7,15 +11,25 @@ export function batchProcessing({
   getData,
   pause,
   bulkInsert,
-  resume
-}: BatchProcessingParams,) {
+  resume,
+  onEnd
+}: BatchProcessingParams): { on: BatchProcessingEventCallback } {
+  const events: Record<string, any> = {};
   let buffer: Matchup[] = [];
   // let mux = false;
 
-  function commitData() {
+  // NOTE: this supports registering one callback per event, just for keeping it simple
+  function on(event: string, callback: unknown) {
+    events[event] = callback;
+  }
+
+  function commitData(final = false) {
     Logger.debug(`Committing Batch [size: ${buffer.length}]`);
 
-    bulkInsert(buffer)
+    const data = [...buffer];
+    buffer = [];
+
+    return bulkInsert(data)
       .then(() => {
         Logger.debug('Batch was successfully committed');
       })
@@ -23,18 +37,17 @@ export function batchProcessing({
         Logger.error(error);
       })
       .finally(() => {
-        buffer = [];
         resume();
       });
   }
 
-  getData((data) => {
-    const result = transformDatum(data);
+  getData((datum) => {
+    const result = transformDatum(datum);
     if (result) buffer.push(result);
 
     if (buffer.length >= BATCH_RECORDS) {
-      pause();
       commitData();
+      pause();
       // if (!mux) {
       //   mux = true;
       //   setTimeout(() => {
@@ -46,10 +59,25 @@ export function batchProcessing({
       // }
     }
   });
+
+  onEnd(async () => {
+    // NOTE: If there are some data still buffered
+    if (buffer.length) {
+      await commitData();
+    }
+
+    events['finish']({
+      data: 'hello World'
+    });
+  });
+
+  return {
+    on
+  };
 }
 
 function transformDatum(datum: string): Matchup | null {
-  if (datum === '[' || datum === ']') return null;
+  if (!datum || datum === '[' || datum === ']') return null;
   const {
     p_match_id,
     champion,

@@ -10,7 +10,8 @@ const db = pgp({
   user: process.env.PG_USER ?? 'ETL_user',
   password: process.env.PG_PASS ?? 'ETL_pass',
   database: process.env.PG_DATABASE ?? 'ETL_db',
-  port: parseInt(process.env.PG_PORT ?? '5432')
+  port: parseInt(process.env.PG_PORT ?? '5432'),
+  allowExitOnIdle: true
 });
 
 const cs = new pgp.helpers.ColumnSet([

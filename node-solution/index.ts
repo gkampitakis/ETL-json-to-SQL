@@ -3,7 +3,7 @@ import { bulkInsert } from './src/pg-client';
 import { batchProcessing } from './src/batch-processor';
 import Logger from './src/logger';
 
-async function main() {
+async function main(filePath: string) {
   Logger.info('ETL pipeline starting 🚀');
 
   const {
@@ -11,16 +11,19 @@ async function main() {
     pause,
     resume,
     onEnd
-  } = createStreamFileReader('../data-to-load/matchups.json');
+  } = createStreamFileReader(filePath);
 
-  batchProcessing({
+  const { on } = batchProcessing({
     getData,
     pause,
     resume,
+    onEnd,
     bulkInsert
   });
 
-  onEnd(() => Logger.info('ETL pipeline finished 🤖'));
+  on('finish', (report) => {
+    Logger.info('ETL pipeline finished 🤖');
+  });
 }
 
-main();
+main(process.env.FILE_PATH ?? '../data-to-load/matchups.json');
