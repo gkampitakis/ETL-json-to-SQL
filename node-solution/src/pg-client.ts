@@ -1,4 +1,4 @@
-import pg_promise, { ColumnSet, IDatabase } from 'pg-promise'
+import pg_promise from 'pg-promise'
 import { Matchup } from './types';
 const pgp = pg_promise({
   capSQL: true,
