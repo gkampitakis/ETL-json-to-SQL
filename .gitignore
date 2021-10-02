@@ -1,3 +1,4 @@
 node-solution/node_modules
 **/dist
 data-to-load
+**/errors

@@ -13,7 +13,7 @@ async function main(filePath: string) {
     onEnd
   } = createStreamFileReader(filePath);
 
-  const { on } = batchProcessing({
+  const batchProcessor = batchProcessing({
     getData,
     pause,
     resume,
@@ -21,7 +21,7 @@ async function main(filePath: string) {
     bulkInsert
   });
 
-  on('finish', (report) => {
+  batchProcessor.on('finish', (report) => {
     Logger.info('ETL pipeline finished 🤖');
   });
 }
