@@ -11,3 +11,4 @@ services:
     volumes:
       - ./pg_seed/:/docker-entrypoint-initdb.d/ # Init path
       - ./dist/postgres_data:/var/lib/postgresql/data/ # Persisent Data
+      # - ./${ETL_ENV}/errors/log.csv:/usr/log.csv

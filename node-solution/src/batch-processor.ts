@@ -16,8 +16,12 @@ export function batchProcessing({
   onEnd
 }: BatchProcessingParams): { on: BatchProcessingEventCallback } {
   const events: Record<string, any> = {};
+  const promises: Promise<void>[] = [];
+  const startTime = Date.now();
   let buffer: Matchup[] = [];
-  // let mux = false;
+  let rowsInserted = 0;
+  let bulkInsertErrors = 0;
+  let transformationErrors = 0;
 
   // NOTE: this supports registering one callback per event, just for keeping it simple
   function on(event: string, callback: unknown) {
@@ -30,46 +34,46 @@ export function batchProcessing({
     const data = [...buffer];
     buffer = [];
 
-    return bulkInsert(data)
+    const insert = bulkInsert(data)
       .then(() => {
-        Logger.debug('Batch was successfully committed');
+        Logger.info('Batch was successfully committed');
+        rowsInserted += data.length;
       })
       .catch((error) => {
+        bulkInsertErrors++;
         saveToErrorLog(data);
         Logger.error(error);
-      })
-      .finally(() => {
+      }).finally(() => {
         resume();
       });
+
+    promises.push(insert);
   }
 
   getData((datum) => {
     const result = transformDatum(datum);
     if (result) buffer.push(result);
 
-    if (buffer.length >= BATCH_RECORDS) {
-      commitData();
+    if (buffer.length === BATCH_RECORDS) {
       pause();
-      // if (!mux) {
-      //   mux = true;
-      //   setTimeout(() => {
-      //     console.log(buffer);
-      //     buffer = [];
-      //     mux = false;
-      //     resume();
-      //   }, 5000);
-      // }
+      commitData();
     }
   });
 
   onEnd(async () => {
-    // NOTE: If there are some data still buffered
     if (buffer.length) {
-      await commitData();
+      commitData();
     }
 
+    await Promise.all(promises);
+
     events['finish']({
-      data: 'hello World'
+      duration: `${Date.now() - startTime} ms`,
+      rowsInserted,
+      errors: {
+        transform: transformationErrors,
+        bulkInsert: bulkInsertErrors
+      }
     });
   });
 

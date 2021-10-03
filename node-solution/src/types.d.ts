@@ -29,6 +29,11 @@ export interface BatchProcessingParams {
 export type BatchProcessingEventCallback =
   ((event: 'finish', callback: (data: BatchReport) => void) => void);
 
-export interface BatchReport { // TBD:
-  data: string;
+export interface BatchReport {
+  duration: number;
+  rowsInserted: number;
+  errors: {
+    transform: number;
+    bulkInsert: number;
+  };
 }

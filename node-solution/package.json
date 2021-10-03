@@ -6,7 +6,8 @@
   "author": "gkampitakis",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node-dev index.ts --poll --respawn --transpileOnly"
+    "start": "ts-node-dev index.ts --poll --respawn --transpileOnly",
+    "build": "tsc"
   },
   "devDependencies": {
     "@types/node": "^16.10.2",

@@ -22,6 +22,7 @@ async function main(filePath: string) {
   });
 
   batchProcessor.on('finish', (report) => {
+    console.log('[Report]: ', report);
     Logger.info('ETL pipeline finished 🤖');
   });
 }
