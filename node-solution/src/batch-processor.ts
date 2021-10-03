@@ -30,6 +30,9 @@ export function batchProcessing({
     const data = [...buffer];
     buffer = [];
 
+    // NOTE: here we pause until we commit the data, maybe we could make it a bit better
+    // by accumulating data to the buffer while committing the old ones.
+
     return bulkInsert(data)
       .then(() => {
         Logger.debug('Batch was successfully committed');
@@ -37,8 +40,7 @@ export function batchProcessing({
       .catch((error) => {
         saveToErrorLog(data);
         Logger.error(error);
-      })
-      .finally(() => {
+      }).finally(() => {
         resume();
       });
   }
@@ -47,9 +49,9 @@ export function batchProcessing({
     const result = transformDatum(datum);
     if (result) buffer.push(result);
 
-    if (buffer.length >= BATCH_RECORDS) {
-      commitData();
+    if (buffer.length >= BATCH_RECORDS) { // This needs to be called only once ?
       pause();
+      commitData();
       // if (!mux) {
       //   mux = true;
       //   setTimeout(() => {
