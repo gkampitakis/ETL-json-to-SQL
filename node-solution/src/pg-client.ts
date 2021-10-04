@@ -1,19 +1,11 @@
-import pg_promise from 'pg-promise'
+import pg_promise from 'pg-promise';
+import { pg_config } from './configurator';
 import { Matchup } from './types';
+
 const pgp = pg_promise({
   capSQL: true,
 });
-
-const db = pgp({
-  keepAlive: true,
-  host: process.env.PG_HOST ?? 'localhost',
-  user: process.env.PG_USER ?? 'ETL_user',
-  password: process.env.PG_PASS ?? 'ETL_pass',
-  database: process.env.PG_DATABASE ?? 'ETL_db',
-  port: parseInt(process.env.PG_PORT ?? '5432'),
-  allowExitOnIdle: true
-});
-
+const db = pgp(pg_config.client);
 const cs = new pgp.helpers.ColumnSet([
   'gold_earned',
   'minions_killed',
@@ -26,7 +18,7 @@ const cs = new pgp.helpers.ColumnSet([
   'damage_dealt_to_champions',
   'lane',
   'region'
-], { table: process.env.PG_TABLE ?? 'matchups' });
+], { table: pg_config.table });
 
 export function bulkInsert(data: Matchup[]) {
   const query = () => pgp.helpers.insert(data, cs);
