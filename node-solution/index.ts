@@ -1,10 +1,14 @@
 import { createStreamFileReader } from './src/file-reader';
 import { bulkInsert } from './src/pg-client';
 import { batchProcessing } from './src/batch-processor';
+import { config } from './src/configurator';
 import Logger from './src/logger';
+
+const { filePath, ...batchProcessingConfig } = config;
 
 async function main(filePath: string) {
   Logger.info('ETL pipeline starting 🚀');
+  console.log('[Starting with config]: ', config);
 
   const {
     getData,
@@ -19,7 +23,7 @@ async function main(filePath: string) {
     resume,
     onEnd,
     bulkInsert
-  });
+  }, batchProcessingConfig);
 
   batchProcessor.on('finish', (report) => {
     console.log('[Report]: ', report);
@@ -27,4 +31,4 @@ async function main(filePath: string) {
   });
 }
 
-main(process.env.FILE_PATH ?? '../data-to-load/matchups.json');
+main(filePath);

@@ -26,6 +26,11 @@ export interface BatchProcessingParams {
   bulkInsert: (data: Matchup[]) => Promise<null>;
 }
 
+export interface BatchProcessingConfig {
+  batchRecords: number;
+  errorLogPath: string;
+}
+
 export type BatchProcessingEventCallback =
   ((event: 'finish', callback: (data: BatchReport) => void) => void);
 

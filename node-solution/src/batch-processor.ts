@@ -1,12 +1,11 @@
 import {
   Matchup,
   BatchProcessingParams,
-  BatchProcessingEventCallback
+  BatchProcessingEventCallback,
+  BatchProcessingConfig
 } from './types';
 import { saveToErrorLog } from './error-handler';
 import Logger from './logger';
-
-const BATCH_RECORDS = parseInt(process.env.BATCH_RECORDS ?? '5000');
 
 export function batchProcessing({
   getData,
@@ -14,7 +13,7 @@ export function batchProcessing({
   bulkInsert,
   resume,
   onEnd
-}: BatchProcessingParams): { on: BatchProcessingEventCallback } {
+}: BatchProcessingParams, config: BatchProcessingConfig): { on: BatchProcessingEventCallback } {
   const events: Record<string, any> = {};
   const promises: Promise<void>[] = [];
   const startTime = Date.now();
@@ -41,7 +40,7 @@ export function batchProcessing({
       })
       .catch((error) => {
         bulkInsertErrors++;
-        saveToErrorLog(data);
+        saveToErrorLog(data, config.errorLogPath);
         Logger.error(error);
       }).finally(() => {
         resume();
@@ -54,7 +53,7 @@ export function batchProcessing({
     const result = transformDatum(datum);
     if (result) buffer.push(result);
 
-    if (buffer.length === BATCH_RECORDS) {
+    if (buffer.length === config.batchRecords) {
       pause();
       commitData();
     }
