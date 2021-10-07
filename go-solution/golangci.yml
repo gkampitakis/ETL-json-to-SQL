@@ -1,0 +1,12 @@
+linters:
+  enable:
+    - sqlclosecheck
+    - unconvert
+    - unparam
+    - wrapcheck
+    - stylecheck
+    - maligned
+    - lll
+    - ifshort
+    - goimports
+    - goimports

@@ -10,9 +10,14 @@ node-build:
 node-run:
 	(cd node-solution && node dist/index.js)
 
-# go-build:
+go-build:
+	CGO_ENABLED=0	go build -ldflags="-w -s" -o go-solution/dist/etl go-solution/main.go
 
-# go-run:
+go-run:
+	(cd go-solution && dist/etl)
+
+go-lint:
+	(cd go-solution && golangci-lint run)
 
 docker-start:
 	docker-compose up -d
