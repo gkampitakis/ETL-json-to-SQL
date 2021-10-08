@@ -7,14 +7,13 @@ import (
 	"strings"
 )
 
-// FIXME: add tags
 type Matchup struct {
 	GoldEarned             int
 	MinionsKilled          int
 	KDA                    int
 	Champion               string
 	VisionScore            int
-	SummoreName            string
+	SummonerName           string
 	Win                    bool
 	GameVersion            string
 	DamageDealtToChampions int
@@ -49,17 +48,21 @@ func TransformDatum(datum string) (Matchup, bool) {
 
 		return tmp[0], tmp[2]
 	}()
+	// NOTE: to future self, when type asserting, the second value
+	// is a boolean indicating if the assertion was correct or not, saving from unhandled panics
+	summonerName, _ := parsedDatum["summonername"].(string)
 
 	return Matchup{
 		Champion:               parsedDatum["champion"].(string),
 		DamageDealtToChampions: int(parsedDatum["totaldamagedealttochampions"].(float64)),
 		GoldEarned:             int(parsedDatum["goldearned"].(float64)),
 		Win:                    parsedDatum["win"] == "true",
+		GameVersion:            parsedDatum["gameversion"].(string),
 		MinionsKilled:          int(parsedDatum["totalminionskilled"].(float64)),
 		KDA:                    getKda(kills, assists, deaths),
 		Lane:                   lane,
 		Region:                 region,
-		SummoreName:            parsedDatum["summonername"].(string),
+		SummonerName:           summonerName,
 		VisionScore:            int(parsedDatum["visionscore"].(float64)),
 	}, true
 }

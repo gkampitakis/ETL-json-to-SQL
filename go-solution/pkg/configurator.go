@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -19,12 +20,12 @@ func init() {
 
 type Configuration struct {
 	_            struct{}
-	FilePath     string
-	BatchRecords int
-	errorLogPath string
+	FilePath     string `json:"filepath"`
+	BatchRecords int    `json:"batchRecords"`
+	ErrorLogPath string `json:"errorLogPath"`
 }
 
-func NewConfiguration() *Configuration {
+func etlConfiguration() *Configuration {
 	filepath := getEnv("FILE_PATH")
 	batchRecords, err := strconv.Atoi(getEnv("BATCH_RECORDS", "5000"))
 	if err != nil {
@@ -35,7 +36,7 @@ func NewConfiguration() *Configuration {
 	return &Configuration{
 		BatchRecords: batchRecords,
 		FilePath:     filepath,
-		errorLogPath: errorLogPath,
+		ErrorLogPath: errorLogPath,
 	}
 }
 
@@ -48,4 +49,24 @@ func getEnv(value string, defaultValue ...string) string {
 	return defaultValue[0]
 }
 
-func NewPGConfiguration() {}
+type PGConfiguration struct {
+	Table      string
+	ConnString string
+}
+
+func newPGConfiguration() *PGConfiguration {
+	table := getEnv("PG_TABLE", "matchups")
+	pgPort := getEnv("PG_PORT", "5432")
+	db := getEnv("PG_DATABASE", "ETL_db")
+	user := getEnv("PG_USER", "ELT_user")
+	password := getEnv("PG_PASS", "ETL_pass")
+
+	return &PGConfiguration{
+		Table:      table,
+		ConnString: fmt.Sprintf("postgres://%s:%s@localhost:%s/%s", user, password, pgPort, db),
+	}
+}
+
+func NewConfiguration() (*Configuration, *PGConfiguration) {
+	return etlConfiguration(), newPGConfiguration()
+}

@@ -11,7 +11,7 @@ node-run:
 	(cd node-solution && node dist/index.js)
 
 go-build:
-	CGO_ENABLED=0	go build -ldflags="-w -s" -o go-solution/dist/etl go-solution/main.go
+	(cd go-solution && CGO_ENABLED=0	go build -ldflags="-w -s" -o dist/etl main.go)
 
 go-run:
 	(cd go-solution && dist/etl)
