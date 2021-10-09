@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -22,10 +23,14 @@ type BatchReport struct {
 	} `json:"errors"`
 }
 
+type Void = struct{}
+
 func main() {
-	done := make(chan bool, 10)
 	log.Println("ETL pipeline starting 🚀")
 
+	maxOperations := make(chan Void, 10)
+	m := sync.Mutex{}
+	wg := sync.WaitGroup{}
 	report := BatchReport{}
 	startTime := time.Now()
 	config, pgConfig := pkg.NewConfiguration()
@@ -57,34 +62,36 @@ func main() {
 
 		items := len(buffer)
 		if items == config.BatchRecords {
+			wg.Add(1)
 			go func(buffer []pkg.Matchup) {
 				log.Printf("Commiting Batch [size: %d]", items)
-				_, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
+				rowsInserted, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
 				if err != nil {
 					log.Fatalln(err)
-					// FIXME:
 				}
 
-				// report.RowsInserted += rowsInserted // FIXME:
-
-				log.Println("Batch was successfully committed")
-				<-done
+				updateRowsInserted(&m, &report, rowsInserted)
+				<-maxOperations
+				wg.Done()
 			}(buffer)
 
 			buffer = make([]pkg.Matchup, 0, config.BatchRecords)
-			done <- true
+			maxOperations <- Void{}
 		}
 	}
 
-	close(done)
+	close(maxOperations)
 
 	if len(buffer) != 0 {
-		_, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
+		rowsInserted, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		// report.RowsInserted += rowsInserted
+
+		updateRowsInserted(&m, &report, rowsInserted)
 	}
+
+	wg.Wait()
 
 	printReport(report, startTime)
 	log.Println("ETL pipeline finished 🤖")
@@ -99,4 +106,11 @@ func printReport(report BatchReport, startTime time.Time) {
 func printConfig(config *pkg.Configuration) {
 	configJSON, _ := json.MarshalIndent(config, "", " ")
 	log.Printf("[Starting with config]: %v", string(configJSON))
+}
+
+func updateRowsInserted(m *sync.Mutex, report *BatchReport, rows int64) {
+	m.Lock()
+	report.RowsInserted += rows
+	m.Unlock()
+	log.Println("Batch was successfully committed")
 }

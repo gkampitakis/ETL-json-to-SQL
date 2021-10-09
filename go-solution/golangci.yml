@@ -3,9 +3,8 @@ linters:
     - sqlclosecheck
     - unconvert
     - unparam
-    - wrapcheck
     - stylecheck
-    - fieldalignment
+    - maligned
     - lll
     - ifshort
     - goimports
