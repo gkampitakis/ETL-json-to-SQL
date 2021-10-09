@@ -21,19 +21,28 @@ type Matchup struct {
 	Region                 string
 }
 
-// Returns a mathcup and isValid value
-// If isValid is false matchup is going to be empty
-func TransformDatum(datum string) (Matchup, bool) {
+// Returns a mathcup, erred and and ignore.
+// If ignore is true or erred is true, matchup is going to be empty
+func TransformDatum(datum string) (m Matchup, erred bool, ignore bool) {
+	// NOTE: to future self by having named return variables, defer function can manipulate those values
+	defer func() {
+		if e := recover(); e != nil {
+			m = Matchup{}
+			erred = true
+			ignore = true
+			return
+		}
+	}()
 	commaRegex := regexp.MustCompile(`^,*`)
 	if datum == "[" || datum == "]" {
-		return Matchup{}, false
+		return Matchup{}, false, true
 	}
 
 	var parsedDatum map[string]interface{}
 	err := json.Unmarshal(commaRegex.ReplaceAll([]byte(datum), []byte("")), &parsedDatum)
 	if err != nil {
 		log.Println(err)
-		return Matchup{}, false
+		return Matchup{}, true, true
 	}
 
 	kills := int(parsedDatum["kills"].(float64))
@@ -64,7 +73,7 @@ func TransformDatum(datum string) (Matchup, bool) {
 		Region:                 region,
 		SummonerName:           summonerName,
 		VisionScore:            int(parsedDatum["visionscore"].(float64)),
-	}, true
+	}, false, false
 }
 
 func getKda(kills, assists, deaths int) int {

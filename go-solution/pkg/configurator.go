@@ -31,7 +31,8 @@ func etlConfiguration() *Configuration {
 	if err != nil {
 		batchRecords = 5000
 	}
-	errorLogPath := getEnv("ERROR_LOG_PATH")
+	path, _ := os.Getwd()
+	errorLogPath := getEnv("ERROR_LOG_PATH", fmt.Sprintf("%s/errors/log.csv", path))
 
 	return &Configuration{
 		BatchRecords: batchRecords,

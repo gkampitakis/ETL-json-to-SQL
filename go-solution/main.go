@@ -54,10 +54,10 @@ func main() {
 	scanner := bufio.NewScanner(f)
 
 	for scanner.Scan() {
-		matchup, isValid := pkg.TransformDatum(scanner.Text())
-
-		if isValid {
+		if matchup, erred, ignore := pkg.TransformDatum(scanner.Text()); !ignore {
 			buffer = append(buffer, matchup)
+		} else if erred {
+			report.Errors.Transform++
 		}
 
 		items := len(buffer)
@@ -67,10 +67,11 @@ func main() {
 				log.Printf("Commiting Batch [size: %d]", items)
 				rowsInserted, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
 				if err != nil {
-					log.Fatalln(err)
+					log.Println(err)
+					pkg.ErrorHandler(buffer, config.ErrorLogPath)
 				}
+				updateReport(&m, &report, rowsInserted, err)
 
-				updateRowsInserted(&m, &report, rowsInserted)
 				<-maxOperations
 				wg.Done()
 			}(buffer)
@@ -85,10 +86,11 @@ func main() {
 	if len(buffer) != 0 {
 		rowsInserted, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
 		if err != nil {
-			log.Fatalln(err)
+			log.Println(err)
+			pkg.ErrorHandler(buffer, config.ErrorLogPath)
 		}
 
-		updateRowsInserted(&m, &report, rowsInserted)
+		updateReport(&m, &report, rowsInserted, err)
 	}
 
 	wg.Wait()
@@ -108,9 +110,16 @@ func printConfig(config *pkg.Configuration) {
 	log.Printf("[Starting with config]: %v", string(configJSON))
 }
 
-func updateRowsInserted(m *sync.Mutex, report *BatchReport, rows int64) {
+func updateReport(m *sync.Mutex, report *BatchReport, rows int64, err error) {
+	if err == nil {
+		m.Lock()
+		report.RowsInserted += rows
+		m.Unlock()
+		log.Println("Batch was successfully committed")
+		return
+	}
+
 	m.Lock()
-	report.RowsInserted += rows
+	report.Errors.BulkInsert++
 	m.Unlock()
-	log.Println("Batch was successfully committed")
 }
