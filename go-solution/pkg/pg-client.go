@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 var columns = []string{
@@ -20,7 +21,7 @@ var columns = []string{
 	"region",
 }
 
-func BulkInsert(conn *pgx.Conn, table string, data []Matchup) (int64, error) {
+func BulkInsert(conn *pgxpool.Pool, table string, data []Matchup) (int64, error) {
 	return conn.CopyFrom(
 		context.Background(),
 		pgx.Identifier{table},

@@ -5,7 +5,7 @@ linters:
     - unparam
     - wrapcheck
     - stylecheck
-    - maligned
+    - fieldalignment
     - lll
     - ifshort
     - goimports

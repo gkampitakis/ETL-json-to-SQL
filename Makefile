@@ -17,7 +17,7 @@ go-run:
 	(cd go-solution && dist/etl)
 
 go-lint:
-	(cd go-solution && golangci-lint run)
+	(cd go-solution && golangci-lint run -c ./golangci.yml)
 
 docker-start:
 	docker-compose up -d

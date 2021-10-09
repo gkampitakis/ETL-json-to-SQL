@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type BatchReport struct {
@@ -23,15 +23,15 @@ type BatchReport struct {
 }
 
 func main() {
+	done := make(chan bool, 10)
 	log.Println("ETL pipeline starting 🚀")
 
 	report := BatchReport{}
 	startTime := time.Now()
 	config, pgConfig := pkg.NewConfiguration()
-	configJSON, _ := json.MarshalIndent(config, "", " ")
 	buffer := make([]pkg.Matchup, 0, config.BatchRecords)
 
-	log.Printf("[Starting with config]: %v", string(configJSON))
+	printConfig(config)
 
 	f, err := os.Open(config.FilePath)
 	if err != nil {
@@ -40,11 +40,11 @@ func main() {
 	defer f.Close()
 
 	ctx := context.Background()
-	conn, err := pgx.Connect(ctx, pgConfig.ConnString)
+	conn, err := pgxpool.Connect(ctx, pgConfig.ConnString)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer conn.Close(ctx)
+	defer conn.Close()
 
 	scanner := bufio.NewScanner(f)
 
@@ -57,30 +57,46 @@ func main() {
 
 		items := len(buffer)
 		if items == config.BatchRecords {
-			log.Printf("Commiting Batch [size: %d]", items)
-			rowsInserted, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
-			if err != nil {
-				log.Fatalln(err)
-			}
+			go func(buffer []pkg.Matchup) {
+				log.Printf("Commiting Batch [size: %d]", items)
+				_, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
+				if err != nil {
+					log.Fatalln(err)
+					// FIXME:
+				}
 
-			report.RowsInserted += rowsInserted
+				// report.RowsInserted += rowsInserted // FIXME:
+
+				log.Println("Batch was successfully committed")
+				<-done
+			}(buffer)
+
 			buffer = make([]pkg.Matchup, 0, config.BatchRecords)
-
-			log.Println("Batch was successfully committed")
+			done <- true
 		}
 	}
 
+	close(done)
+
 	if len(buffer) != 0 {
-		rowsInserted, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
+		_, err := pkg.BulkInsert(conn, pgConfig.Table, buffer)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		report.RowsInserted += rowsInserted
+		// report.RowsInserted += rowsInserted
 	}
 
+	printReport(report, startTime)
+	log.Println("ETL pipeline finished 🤖")
+}
+
+func printReport(report BatchReport, startTime time.Time) {
 	report.Duration = fmt.Sprintf("%v ms", time.Since(startTime).Milliseconds())
 	reportJSON, _ := json.MarshalIndent(report, "", " ")
 	log.Println(string(reportJSON))
+}
 
-	log.Println("ETL pipeline finished 🤖")
+func printConfig(config *pkg.Configuration) {
+	configJSON, _ := json.MarshalIndent(config, "", " ")
+	log.Printf("[Starting with config]: %v", string(configJSON))
 }
