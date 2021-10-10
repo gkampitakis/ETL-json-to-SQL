@@ -1,12 +1,17 @@
 # ETL-json-to-SQL
 
-Load json file, transform it and save it to PostgreSQL
+Extract data from JSON file, transform it and load it to PostgreSQL
 
 ## Description
 
 This repository contains two solutions for "extracting", "transforming" and "loading" data to Postgresql. One solution is written in NodeJS and the second one in Golang.
 
 The focus is how to load data in a performant way (streaming ??) and after transforming save them in Postgresql (in bulk inserts).
+
+> In NodeJS solution I used multi rows insert, couldn't make the solution with `COPY` work. [pg-copy-streams](https://www.npmjs.com/package/pg-copy-streams)
+
+> In Golang solution I was able to use the `COPY` that Postgresql supports.
+
 ### Dataset
 
 The file used for running the ETL pipeline was taken from [here](https://www.kaggle.com/jasperan/league-of-legends-1v1-matchups-results?select=matchups.json). 
@@ -51,18 +56,44 @@ lane VARCHAR,
 region VARCHAR
 ```
 
+## Queries
+
+Some queries you can run after loading the data
+
+```sql
+# Get the gold_earned for each lane
+
+SELECT sum(gold_earned),lane 
+FROM matchups
+GROUP BY lane
+ORDER BY sum DESC;
+```
+
+```sql
+# Get the champions and number of games with the average kda
+
+SELECT count(*) as games,champion,round(AVG(kda),0) as avg_kda 
+FROM matchups 
+GROUP BY champion 
+ORDER BY avg_kda DESC;
+```
+
+```sql
+# Get number of unique records in table
+
+SELECT COUNT(*) 
+FROM (
+  SELECT DISTINCT * 
+  FROM matchups
+  ) as unique_rows;
+```
+
 ## Useful commands
 
 __Insert Data to Postgres from CSV:__
 ```sql
 \copy matchups(champion,
 damage_dealt_to_champions,game_version,gold_earned,win,minions_killed,kda,lane,region,summoner_name,vision_score) from '/usr/log.csv' (FORMAT csv,DELIMITER ',');
-```
-
-__Get number of unique records in table:__
-
-```sql
-SELECT COUNT(*) FROM (SELECT DISTINCT * FROM matchups) as unique_rows;
 ```
 
 __Connect to postgresql container:__
@@ -85,9 +116,19 @@ For running etl in both versions
   - Run code (after building) `make node-run`
 </details>
 
+<details>
+  <summary>Golang</summary>
+  
+  - Build code `make go-build`
+  - Run code (after building) `make go-run`
+  - Run linter `make go-lint`
+</details>
+
 ## Resources
 
 - [Data Imports](https://github.com/vitaly-t/pg-promise/wiki/Data-Imports) wiki doc for the NodeJS Postgres Driver
 - [Performance Boost](https://github.com/vitaly-t/pg-promise/wiki/Performance-Boost) wiki doc for the NodeJS Postgres Driver
 - [Multi row insert with pg-promise](https://stackoverflow.com/questions/37300997/multi-row-insert-with-pg-promise)
 - [Postgresql - Populating a database](https://www.postgresql.org/docs/current/populate.html)
+- [Golang PGX](https://github.com/jackc/pgx)
+- [Golang Profiling](https://flaviocopes.com/golang-profiling/)

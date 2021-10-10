@@ -34,7 +34,10 @@ func ErrorHandler(matchups []Matchup, path string) {
 			fmt.Sprint(item.VisionScore),
 		}
 
-		csvWriter.Write(row)
+		err := csvWriter.Write(row)
+		if err != nil {
+			log.Printf("[Save Logger]: %s", err.Error())
+		}
 	}
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "node-solution",
   "version": "1.0.0",
-  "description": "Transform JSON data to SQL and load them to PostgreSQL",
+  "description": "Extract data from JSON file, transform it and load it to PostgreSQL",
   "main": "index.js",
   "author": "gkampitakis",
   "license": "MIT",
